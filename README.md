@@ -6,4 +6,4 @@ As a teacher, I created this tutorial for the purpose of the Computer Vision for
 Microsoft Visual Studio 2017
 
 # Dependencies
-[EmguCV] (https://github.com/emgucv/emgucv) 3.0.3.2721 
+[EmguCV] (https://github.com/emgucv/emgucv) 3.2.0.2721 
