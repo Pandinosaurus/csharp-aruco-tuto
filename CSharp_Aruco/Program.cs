@@ -21,61 +21,15 @@ namespace CSharp_Aruco
     {
 
         /// <summary>
-        /// Convert euler angles to a rotation matrix for our object.
+        /// Convert a rotation vector in a rotation matrix using Rodrigues algorithm.
         /// </summary>
-        /// <param name="theta"> Array of double containing our three euler angles (x,y,z)</param>
+        /// <param name="rvec">The rotation vector to convert.</param>
         /// <returns></returns>
-        Mat EulerAnglesToRotationMatrix(double[] theta)
+        Mat GetRotationMatrixFromRotationVector(VectorOfDouble rvec)
         {
-            // Calculate rotation about x axis
-            Mat R_x = new Mat(3, 3, DepthType.Cv32F, 1);
-            Image<Gray, float> R_x_img = R_x.ToImage<Gray, float>();
-            R_x_img.Data[0, 0, 0] = 1f;
-            R_x_img.Data[0, 1, 0] = 0f;
-            R_x_img.Data[0, 2, 0] = 0f;
-            R_x_img.Data[1, 0, 0] = 0f;
-            R_x_img.Data[1, 1, 0] = (float)Math.Cos(theta[0]);
-            R_x_img.Data[1, 2, 0] = -(float)Math.Sin(theta[0]);
-            R_x_img.Data[2, 0, 0] = 0f;
-            R_x_img.Data[2, 1, 0] = (float)Math.Sin(theta[0]);
-            R_x_img.Data[2, 2, 0] = (float)Math.Cos(theta[0]);
-            R_x = R_x_img.Mat;
-
-
-            // Calculate rotation about y axis
-            Mat R_y = new Mat(3, 3, DepthType.Cv32F, 1);
-            Image<Gray, float> R_y_img = R_y.ToImage<Gray, float>();
-            R_y_img.Data[0, 0, 0] = (float)Math.Cos(theta[1]);
-            R_y_img.Data[0, 1, 0] = 0f;
-            R_y_img.Data[0, 2, 0] = (float)Math.Sin(theta[1]);
-            R_y_img.Data[1, 0, 0] = 0f;
-            R_y_img.Data[1, 1, 0] = 1f;
-            R_y_img.Data[1, 2, 0] = 0f;
-            R_y_img.Data[2, 0, 0] = -(float)Math.Sin(theta[1]);
-            R_y_img.Data[2, 1, 0] = 0f;
-            R_y_img.Data[2, 2, 0] = (float)Math.Cos(theta[1]);
-            R_y = R_y_img.Mat;
-
-
-            // Calculate rotation about z axis
-            Mat R_z = new Mat(3, 3, DepthType.Cv32F, 1);
-            Image<Gray, float> R_z_img = R_z.ToImage<Gray, float>();
-            R_z_img.Data[0, 0, 0] = (float)Math.Cos(theta[2]);
-            R_z_img.Data[0, 1, 0] = -(float)Math.Sin(theta[2]);
-            R_z_img.Data[0, 2, 0] = 0f;
-            R_z_img.Data[1, 0, 0] = (float)Math.Sin(theta[2]);
-            R_z_img.Data[1, 1, 0] = (float)Math.Cos(theta[2]);
-            R_z_img.Data[1, 2, 0] = 0f;
-            R_z_img.Data[2, 0, 0] = 0f;
-            R_z_img.Data[2, 1, 0] = 0f;
-            R_z_img.Data[2, 2, 0] = 1f;
-            R_z = R_z_img.Mat;
-
-            // Create full rotation matrix
-            //Mat R = R_z * R_y * R_x;
-            Mat R = new Mat();
-            
-            return R;
+            Mat rmat = new Mat();
+            CvInvoke.Rodrigues(rvec, rmat);
+            return rmat;
         }
 
         /// <summary>
