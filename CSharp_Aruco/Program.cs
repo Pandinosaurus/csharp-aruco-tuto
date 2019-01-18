@@ -19,6 +19,19 @@ namespace CSharp_Aruco
 {
     class Program
     {
+        /// <summary>
+        /// Get the centroid of an object based on 4 coners.
+        /// Such corners are easily obtained with Aruco markers.
+        /// </summary>
+        /// <param name="corner"> The 4 corners from which we would like to calculate the centroid. </param>
+        /// <returns></returns>
+        PointF GetCentroidFromCorner(VectorOfPointF corner)
+        {
+            PointF center = new PointF(0, 0);
+            center.X = (corner[0].X + corner[1].X + corner[2].X + corner[3].X) / 4; //X is on horizontal axis = cols /!\ opencv Mat are row based (y,x) = (i,j), left to right, top to bottom
+            center.Y = (corner[0].Y + corner[1].Y + corner[2].Y + corner[3].Y) / 4; //Y is on vertical axis = rows /!\ opencv Mat are row based (y,x) = (i,j), left to right, top to bottom
+            return center;
+        }
 
         /// <summary>
         /// Convert a rotation vector in a rotation matrix using Rodrigues algorithm.
