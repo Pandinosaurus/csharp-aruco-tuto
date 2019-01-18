@@ -21,7 +21,7 @@ namespace CSharp_Aruco
     {
 
         /// <summary>
-        /// Convert euler anles to a rotation matrix for our object.
+        /// Convert euler angles to a rotation matrix for our object.
         /// </summary>
         /// <param name="theta"> Array of double containing our three euler angles (x,y,z)</param>
         /// <returns></returns>
@@ -42,7 +42,7 @@ namespace CSharp_Aruco
             R_x = R_x_img.Mat;
 
 
-            // Calculate rotation about x axis
+            // Calculate rotation about y axis
             Mat R_y = new Mat(3, 3, DepthType.Cv32F, 1);
             Image<Gray, float> R_y_img = R_y.ToImage<Gray, float>();
             R_y_img.Data[0, 0, 0] = (float)Math.Cos(theta[1]);
@@ -57,7 +57,7 @@ namespace CSharp_Aruco
             R_y = R_y_img.Mat;
 
 
-            // Calculate rotation about x axis
+            // Calculate rotation about z axis
             Mat R_z = new Mat(3, 3, DepthType.Cv32F, 1);
             Image<Gray, float> R_z_img = R_z.ToImage<Gray, float>();
             R_z_img.Data[0, 0, 0] = (float)Math.Cos(theta[2]);
