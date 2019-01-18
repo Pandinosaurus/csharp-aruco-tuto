@@ -1,6 +1,6 @@
 ﻿/*
  *  A small tutorial to detect and draw aruco markers with EmguCV in C#.
- *  Created for the purpose of the Computer Vision for Video Game course at Gamagora @ICOM @UnivLyon2.
+ *  Created for the purpose of the Computer Vision for Video Games course at Gamagora @ICOM @UnivLyon2.
  *  
  *  Author: Rémi Ratajczak (teacher)
  *  Date : 01/2019
@@ -19,6 +19,104 @@ namespace CSharp_Aruco
 {
     class Program
     {
+
+        /// <summary>
+        /// Convert euler anles to a rotation matrix for our object.
+        /// </summary>
+        /// <param name="theta"> Array of double containing our three euler angles (x,y,z)</param>
+        /// <returns></returns>
+        Mat EulerAnglesToRotationMatrix(double[] theta)
+        {
+            // Calculate rotation about x axis
+            Mat R_x = new Mat(3, 3, DepthType.Cv32F, 1);
+            Image<Gray, float> R_x_img = R_x.ToImage<Gray, float>();
+            R_x_img.Data[0, 0, 0] = 1f;
+            R_x_img.Data[0, 1, 0] = 0f;
+            R_x_img.Data[0, 2, 0] = 0f;
+            R_x_img.Data[1, 0, 0] = 0f;
+            R_x_img.Data[1, 1, 0] = (float)Math.Cos(theta[0]);
+            R_x_img.Data[1, 2, 0] = -(float)Math.Sin(theta[0]);
+            R_x_img.Data[2, 0, 0] = 0f;
+            R_x_img.Data[2, 1, 0] = (float)Math.Sin(theta[0]);
+            R_x_img.Data[2, 2, 0] = (float)Math.Cos(theta[0]);
+            R_x = R_x_img.Mat;
+
+
+            // Calculate rotation about x axis
+            Mat R_y = new Mat(3, 3, DepthType.Cv32F, 1);
+            Image<Gray, float> R_y_img = R_y.ToImage<Gray, float>();
+            R_y_img.Data[0, 0, 0] = (float)Math.Cos(theta[1]);
+            R_y_img.Data[0, 1, 0] = 0f;
+            R_y_img.Data[0, 2, 0] = (float)Math.Sin(theta[1]);
+            R_y_img.Data[1, 0, 0] = 0f;
+            R_y_img.Data[1, 1, 0] = 1f;
+            R_y_img.Data[1, 2, 0] = 0f;
+            R_y_img.Data[2, 0, 0] = -(float)Math.Sin(theta[1]);
+            R_y_img.Data[2, 1, 0] = 0f;
+            R_y_img.Data[2, 2, 0] = (float)Math.Cos(theta[1]);
+            R_y = R_y_img.Mat;
+
+
+            // Calculate rotation about x axis
+            Mat R_z = new Mat(3, 3, DepthType.Cv32F, 1);
+            Image<Gray, float> R_z_img = R_z.ToImage<Gray, float>();
+            R_z_img.Data[0, 0, 0] = (float)Math.Cos(theta[2]);
+            R_z_img.Data[0, 1, 0] = -(float)Math.Sin(theta[2]);
+            R_z_img.Data[0, 2, 0] = 0f;
+            R_z_img.Data[1, 0, 0] = (float)Math.Sin(theta[2]);
+            R_z_img.Data[1, 1, 0] = (float)Math.Cos(theta[2]);
+            R_z_img.Data[1, 2, 0] = 0f;
+            R_z_img.Data[2, 0, 0] = 0f;
+            R_z_img.Data[2, 1, 0] = 0f;
+            R_z_img.Data[2, 2, 0] = 1f;
+            R_z = R_z_img.Mat;
+
+            // Create full rotation matrix
+            //Mat R = R_z * R_y * R_x;
+            Mat R = new Mat();
+            
+            return R;
+        }
+
+        /// <summary>
+        /// Convert a rotation matrix to a Quternion (array of double).
+        /// C# translation of the C++ version available here https://gist.github.com/shubh-agrawal/76754b9bfb0f4143819dbd146d15d4c8
+        /// </summary>
+        /// <param name="Rmat">Input, cv::Mat, rotation matrix</param>
+        /// <param name="Q">Output, double[4], Queternion vector</param>
+        void GetQuaternion(Mat Rmat, out double[] Q)
+        {
+            Image<Gray, Byte> R = Rmat.ToImage<Gray, Byte>();
+            double trace = R.Data[0, 0, 0] + R.Data[1, 1, 0] + R.Data[2, 2, 0];
+
+            Q = new double[4];
+
+            if (trace > 0.0)
+            {
+                double s = Math.Sqrt(trace + 1.0);
+                Q[3] = (s * 0.5);
+                s = 0.5 / s;
+                Q[0] = ((R.Data[2, 1, 0] - R.Data[1, 2, 0]) * s);
+                Q[1] = ((R.Data[0, 2, 0] - R.Data[2, 0, 0]) * s);
+                Q[2] = ((R.Data[1, 0, 0] - R.Data[0, 1, 0]) * s);
+            }
+
+            else
+            {
+                int i = R.Data[0, 0, 0] < R.Data[1, 1, 0] ? (R.Data[1, 1, 0] < R.Data[2, 2, 0] ? 2 : 1) : (R.Data[0, 0, 0] < R.Data[2, 2, 0] ? 2 : 0);
+                int j = (i + 1) % 3;
+                int k = (i + 2) % 3;
+
+                double s = Math.Sqrt(R.Data[i, i, 0] - R.Data[j, j, 0] - R.Data[k, k, 0] + 1.0f);
+                Q[i] = s * 0.5;
+                s = 0.5 / s;
+
+                Q[3] = (R.Data[k, j, 0] - R.Data[j, k, 0]) * s;
+                Q[j] = (R.Data[j, i, 0] + R.Data[i, j, 0]) * s;
+                Q[k] = (R.Data[k, i, 0] + R.Data[i, k, 0]) * s;
+            }
+        }
+
         /// <summary>
         /// Utility function to save an ArucoBoard on disk
         /// </summary>
@@ -49,7 +147,6 @@ namespace CSharp_Aruco
         /// <param name="args">Optional arguments</param>
         static void Main(string[] args)
         {
-
             #region Initialize video capture object on default webcam (0)
             // Instantiate a webcam abstraction
             VideoCapture capture;
@@ -57,65 +154,46 @@ namespace CSharp_Aruco
             #endregion
 
             #region Initialize and save Aruco dictionary and gridboard
-            // Create a aruco board and save it on disk for future print and use
-            int markersX = 4; // number of markers on X 
-            int markersY = 4; // number of marker on Y
-            int markersLength = 80; // size of the markers - in arbitrary units, usually meters
-            int markersSeparation = 30; // margin between 2 markers - in arbitrary units, usually meters
+            int markersX = 4;
+            int markersY = 4;
+            int markersLength = 80;
+            int markersSeparation = 30;
             Dictionary ArucoDict = new Dictionary(Dictionary.PredefinedDictionaryName.Dict4X4_100); // bits x bits (per marker) _ number of markers in dict
             GridBoard ArucoBoard = new GridBoard(markersX, markersY, markersLength, markersSeparation, ArucoDict);
             PrintArucoBoard(ArucoBoard, markersX, markersY, markersLength, markersSeparation);
             #endregion
 
             #region Initialize Aruco parameters for markers detection
-            // Use default aruco parameters ArucoParameters
             DetectorParameters ArucoParameters = new DetectorParameters();
             ArucoParameters = DetectorParameters.GetDefault();
             #endregion
 
             #region Initialize Camera calibration matrix with distortion coefficients 
-            //NB : this region is here for convenience, but it should really be outside the infinite loop using known and serialized values:) 
-
-            // Use estimated webcam matrix (camera matrix)
-            // We will use arbitrary values for now, but we really should calibrate the camera if we target precise results.
-            // See coefficient examples here https://docs.opencv.org/2.4/doc/tutorials/calib3d/camera_calibration/camera_calibration.html
-            int frameWidth = 640; //in px
-            int frameHeight = 480; //in px
+            // Calibration done with https://docs.opencv.org/3.4.3/d7/d21/tutorial_interactive_calibration.html
+            String cameraConfigurationFile = "D:/Projects/C#Unity_opencvForGamagora/exemples/CSharp_Aruco/cameraParameters.xml";
+            FileStorage fs = new FileStorage(cameraConfigurationFile, FileStorage.Mode.Read);
+            if (!fs.IsOpened)
+            {
+                Console.WriteLine("Could not open configuration file " + cameraConfigurationFile);
+                return;
+            }
             Mat cameraMatrix = new Mat(new Size(3, 3), DepthType.Cv32F, 1);
-            cameraMatrix.SetTo(new MCvScalar(0));
-            Image<Gray, double> cameraImage = cameraMatrix.ToImage<Gray, double>();
-            cameraImage.Data[0, 0, 0] = 700; // focalX and focalY are assumed to be the same with arbitrary values in the same range than cx and cx (see above link). Without calibration, I fixed 
-            cameraImage.Data[1, 1, 0] = 700; // these round values. Again : this is not a good practice --> calibrate :) . Here fixed for a frame of 640x480. Should be scaled with frame dimensions.
-            cameraImage.Data[2, 2, 0] = 1;
-            cameraImage.Data[0, 2, 0] = frameWidth / 2; //e.g. 320 if 640 ~e+002 - we assume the center of our image in pixels is also the center of our optics - that's never really true --> calibrate
-            cameraImage.Data[1, 2, 0] = frameHeight / 2; //e.g. 240 if 480 ~e+002 - we assume the center of our image in pixels is also the center of our optics - that's never really true --> calibrate
-            cameraMatrix = cameraImage.Mat.Clone();
-
-            // We make sure that our distortion coefficients are 0 (do not influence our view)
-            // Again, this is a rough approximation to avoid camera calibration, see https://docs.opencv.org/2.4/doc/tutorials/calib3d/camera_calibration/camera_calibration.html
-            // We can use this because we visually assessed that we don't have much distortions with our camera, but it is a very bad practice --> Always calibrate the camera if you can !
             Mat distortionMatrix = new Mat(1, 8, DepthType.Cv32F, 1);
-            distortionMatrix.SetTo(new MCvScalar(0));
+            fs["cameraMatrix"].ReadMat(cameraMatrix);
+            fs["dist_coeffs"].ReadMat(distortionMatrix);
             #endregion
 
             #region Infinite loop processing the image
-            // Capture webcam frame and process it
             while (true)
             {
                 #region Capture a frame with webcam
-                // Retrieve our frame
                 Mat frame = new Mat();
                 frame = capture.QueryFrame();
-                if(frame.Cols != frameWidth || frame.Rows != frameHeight)
-                {
-                    CvInvoke.Resize(frame, frame, new Size(frameWidth, frameHeight));
-                }
                 #endregion
 
                 if (!frame.IsEmpty)
                 {
                     #region Detect markers on last retrieved frame
-                    // Detect our markers
                     VectorOfInt ids = new VectorOfInt(); // name/id of the detected markers
                     VectorOfVectorOfPointF corners = new VectorOfVectorOfPointF(); // corners of the detected marker
                     VectorOfVectorOfPointF rejected = new VectorOfVectorOfPointF(); // rejected contours
@@ -126,19 +204,16 @@ namespace CSharp_Aruco
                     if (ids.Size > 0)
                     {
                         #region Draw detected markers
-                        // Draw markers
                         ArucoInvoke.DrawDetectedMarkers(frame, corners, ids, new MCvScalar(255, 0, 255));
                         #endregion
 
                         #region Estimate pose for each marker using camera calibration matrix and distortion coefficents
-                        // Get the pose of our markers w.r.t. the webcam
                         Mat rvecs = new Mat(); // rotation vector
                         Mat tvecs = new Mat(); // translation vector
                         ArucoInvoke.EstimatePoseSingleMarkers(corners, markersLength, cameraMatrix, distortionMatrix, rvecs, tvecs);
                         #endregion
 
                         #region Draw 3D orthogonal axis on markers using estimated pose
-                        // For each marker, we will draw a 3D axis on it using the estimated pose
                         for (int i = 0; i < ids.Size; i++)
                         {
                             using (Mat rvecMat = rvecs.Row(i))
@@ -164,7 +239,6 @@ namespace CSharp_Aruco
                     }
 
                     #region Display current frame plus drawings
-                    // Display
                     CvInvoke.Imshow("Image", frame);
                     CvInvoke.WaitKey(24);
                     #endregion
